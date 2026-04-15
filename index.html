@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Focus Flow — One screen for the ADD brain</title>
+<meta name="description" content="Stop tab-hopping. One screen, four zones, four keystrokes. Built for the ADD brain by someone who has one.">
+<style>
+:root{
+  --bg:#0e1116; --card:#161b22; --border:#30363d; --fg:#e6edf3; --dim:#8b949e;
+  --accent:#58a6ff; --green:#3fb950; --yellow:#d29922; --red:#f85149; --purple:#bc8cff;
+  --zone1:#1e3a5f; --zone2:#1f4d2e; --zone3:#4d2f1a; --zone4:#3d1f4d;
+}
+body.light{
+  --bg:#f6f8fa; --card:#fff; --border:#d0d7de; --fg:#1f2328; --dim:#656d76;
+  --zone1:#ddf4ff; --zone2:#dafbe1; --zone3:#fff1e5; --zone4:#fbefff;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--fg);font:15px/1.45 -apple-system,Segoe UI,Helvetica,Arial,sans-serif;overflow:hidden}
+header{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);height:50px;gap:12px}
+header .brand{font-weight:700;font-size:18px}
+header .brand .dot{color:var(--accent)}
+header .greeting{color:var(--dim);font-size:13px;flex:1;margin-left:16px}
+header .mode{background:transparent;color:var(--fg);border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px}
+header .mode:hover{border-color:var(--accent)}
+header .tip{color:var(--dim);font-size:12px;max-width:45%;text-align:right;font-style:italic}
+main{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;height:calc(100vh - 50px);gap:6px;padding:6px}
+.zone{background:var(--card);border:2px solid var(--border);border-radius:10px;padding:14px;overflow:auto;position:relative;transition:border-color .15s, transform .15s}
+.zone.active{border-color:var(--accent);box-shadow:0 0 0 3px rgba(88,166,255,.15)}
+.zone h2{margin:0 0 10px;font-size:15px;display:flex;justify-content:space-between;align-items:baseline}
+.zone h2 .hot{color:var(--dim);font-size:11px;background:var(--bg);border:1px solid var(--border);padding:2px 6px;border-radius:4px}
+.zone[data-z="1"] h2 span.name{color:#79c0ff}
+.zone[data-z="2"] h2 span.name{color:#56d364}
+.zone[data-z="3"] h2 span.name{color:#f0883e}
+.zone[data-z="4"] h2 span.name{color:#d2a8ff}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:10px 12px;margin-bottom:8px;font-size:13.5px;cursor:pointer;transition:border-color .1s}
+.card:hover{border-color:var(--accent)}
+.card .title{font-weight:600;margin-bottom:2px}
+.card .meta{color:var(--dim);font-size:11px}
+.card.done{opacity:.45;text-decoration:line-through}
+.add-input{width:100%;background:var(--bg);border:1px dashed var(--border);border-radius:7px;padding:9px 12px;color:var(--fg);font:inherit;margin-bottom:8px;font-size:13px}
+.add-input:focus{outline:none;border-style:solid;border-color:var(--accent)}
+.link-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.link-row a{font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:4px 8px;color:var(--fg);text-decoration:none}
+.link-row a:hover{border-color:var(--accent)}
+.rule{margin:10px 0;border-top:1px solid var(--border)}
+.timer{font-size:32px;font-weight:700;text-align:center;margin:14px 0 6px;font-variant-numeric:tabular-nums}
+.timer-row{display:flex;justify-content:center;gap:6px;margin-bottom:10px}
+.timer-row button{background:var(--bg);border:1px solid var(--border);color:var(--fg);padding:5px 12px;border-radius:5px;font:inherit;cursor:pointer;font-size:12px}
+.timer-row button:hover{border-color:var(--accent)}
+footer{position:fixed;bottom:4px;right:8px;color:var(--dim);font-size:10px}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Focus<span class="dot">.</span>Flow</div>
+  <div class="greeting" id="greeting">—</div>
+  <div class="tip" id="tip">—</div>
+  <button class="mode" onclick="toggleTheme()">Dark / Light</button>
+  <button class="mode" onclick="document.getElementById('settings').showModal()">Zones</button>
+</header>
+<main>
+  <section class="zone active" data-z="1" onclick="focusZone(1)">
+    <h2><span class="name" id="name1">Zone 1</span> <span class="hot">1</span></h2>
+    <div class="link-row" id="links1"></div>
+    <input class="add-input" placeholder="+ Add a task (Enter)" data-zone="1">
+    <div id="tasks1"></div>
+  </section>
+  <section class="zone" data-z="2" onclick="focusZone(2)">
+    <h2><span class="name" id="name2">Zone 2</span> <span class="hot">2</span></h2>
+    <div class="link-row" id="links2"></div>
+    <input class="add-input" placeholder="+ Add a task (Enter)" data-zone="2">
+    <div id="tasks2"></div>
+  </section>
+  <section class="zone" data-z="3" onclick="focusZone(3)">
+    <h2><span class="name" id="name3">Zone 3</span> <span class="hot">3</span></h2>
+    <div class="link-row" id="links3"></div>
+    <input class="add-input" placeholder="+ Add a task (Enter)" data-zone="3">
+    <div id="tasks3"></div>
+  </section>
+  <section class="zone" data-z="4" onclick="focusZone(4)">
+    <h2><span class="name" id="name4">Zone 4</span> <span class="hot">4</span></h2>
+    <div class="timer" id="timer">25:00</div>
+    <div class="timer-row">
+      <button onclick="startTimer(25)">Focus 25</button>
+      <button onclick="startTimer(5)">Break 5</button>
+      <button onclick="stopTimer()">Stop</button>
+    </div>
+    <input class="add-input" placeholder="+ Brain dump (Enter)" data-zone="4">
+    <div id="tasks4"></div>
+  </section>
+</main>
+<footer>Focus.Flow • local-only (your data never leaves this browser) • <a href="https://michaelmankin.com" style="color:var(--dim)">Mankin Consulting</a></footer>
+
+<dialog id="settings" style="background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:10px;padding:20px;max-width:440px;width:90%">
+  <h3 style="margin:0 0 14px">Customize your four zones</h3>
+  <p style="color:var(--dim);font-size:13px;margin:0 0 14px">Name each zone for the context you actually live in. Comma-separate quick-links (like "Gmail|https://gmail.com").</p>
+  <div id="settings-rows"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+    <button onclick="document.getElementById('settings').close()" style="background:transparent;border:1px solid var(--border);color:var(--fg);padding:7px 14px;border-radius:6px;cursor:pointer;font:inherit">Close</button>
+    <button onclick="saveSettings()" style="background:var(--accent);color:#fff;border:none;padding:7px 14px;border-radius:6px;cursor:pointer;font:inherit;font-weight:600">Save</button>
+  </div>
+</dialog>
+
+<script>
+const TIPS = [
+  "Over-planning is procrastination in an expensive suit.",
+  "Start anywhere. Start messy. 2 PM is a perfectly valid start time.",
+  "Your desk scatter is not a moral failure.",
+  "The Top 3 Rule: three things, or zero things. Never more.",
+  "Done beats perfect. Always.",
+  "If you're stuck, lower the bar — what's the world's worst version you could ship?",
+  "Every task expands to fill the time. Box it.",
+  "Shame is a time tax. Stop paying it.",
+  "External brain first. Your head is not a filing cabinet.",
+  "When in doubt, 25 minutes. Just 25."
+];
+const DEFAULT_ZONES = [
+  {name:"Trading",   links:[{t:"TTB",  u:"https://topthebot.com"}, {t:"Yahoo", u:"https://finance.yahoo.com"}]},
+  {name:"Email",     links:[{t:"Gmail",u:"https://mail.google.com"}, {t:"Drive",u:"https://drive.google.com"}]},
+  {name:"Build",     links:[{t:"GitHub",u:"https://github.com"}, {t:"Cal", u:"https://calendar.google.com"}]},
+  {name:"Garage",    links:[]}
+];
+const KEY = "focusflow.v1";
+
+let state = load();
+
+function load(){
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY) || "{}");
+    if (!s.zones) s.zones = DEFAULT_ZONES.map(z=>({...z, tasks:[]}));
+    if (!s.theme) s.theme = "dark";
+    return s;
+  } catch { return {zones: DEFAULT_ZONES.map(z=>({...z,tasks:[]})), theme:"dark"}; }
+}
+function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+
+function render(){
+  document.body.classList.toggle("light", state.theme==="light");
+  state.zones.forEach((z,i)=>{
+    const n = i+1;
+    document.getElementById("name"+n).textContent = z.name;
+    const links = document.getElementById("links"+n);
+    if (links) links.innerHTML = (z.links||[]).map(l=>`<a href="${l.u}" target="_blank" rel="noopener">${escapeHtml(l.t)}</a>`).join("");
+    const tasks = document.getElementById("tasks"+n);
+    if (!tasks) return;
+    tasks.innerHTML = (z.tasks||[]).map((t,idx)=>`
+      <div class="card ${t.done?'done':''}" onclick="toggleTask(${n},${idx})" oncontextmenu="event.preventDefault();deleteTask(${n},${idx})">
+        <div class="title">${escapeHtml(t.text)}</div>
+        <div class="meta">${new Date(t.at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})} • click=done • right-click=delete</div>
+      </div>`).join("");
+  });
+}
+
+function escapeHtml(s){ return String(s||"").replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function addTask(zoneNum, text){
+  if (!text.trim()) return;
+  state.zones[zoneNum-1].tasks = state.zones[zoneNum-1].tasks || [];
+  state.zones[zoneNum-1].tasks.unshift({text, done:false, at:Date.now()});
+  save(); render();
+}
+function toggleTask(z,i){ state.zones[z-1].tasks[i].done = !state.zones[z-1].tasks[i].done; save(); render(); }
+function deleteTask(z,i){ state.zones[z-1].tasks.splice(i,1); save(); render(); }
+
+function focusZone(n){
+  document.querySelectorAll(".zone").forEach(el=>el.classList.toggle("active", el.dataset.z==String(n)));
+}
+
+function toggleTheme(){ state.theme = state.theme==="dark"?"light":"dark"; save(); render(); }
+
+// Greeting + tip
+function updateHeader(){
+  const h = new Date().getHours();
+  const g = h<5?"Late night.":h<12?"Good morning.":h<17?"Good afternoon.":h<22?"Good evening.":"Late night.";
+  const nyHour = new Date().toLocaleString('en-US',{timeZone:'America/New_York',hour:'numeric',hour12:false});
+  const nyDay = new Date().toLocaleString('en-US',{timeZone:'America/New_York',weekday:'short'});
+  const isWeekday = !['Sat','Sun'].includes(nyDay);
+  const mkt = !isWeekday ? "Markets closed (weekend)" : (nyHour<9.5?"Pre-market":nyHour<16?"Markets OPEN":"After-hours");
+  document.getElementById("greeting").textContent = `${g} ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})} · ${mkt}`;
+  document.getElementById("tip").textContent = '"' + TIPS[Math.floor(Date.now()/30000) % TIPS.length] + '"';
+}
+
+// Timer
+let timerEnd = 0, timerId = null;
+function startTimer(min){
+  timerEnd = Date.now() + min*60*1000;
+  if (timerId) clearInterval(timerId);
+  timerId = setInterval(()=>{
+    const ms = Math.max(0, timerEnd - Date.now());
+    const m = Math.floor(ms/60000), s = Math.floor(ms/1000)%60;
+    document.getElementById("timer").textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    if (ms===0){ clearInterval(timerId); try{new Audio("data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YVoGAAA=").play()}catch{} alert("Done."); }
+  },500);
+}
+function stopTimer(){ if (timerId) clearInterval(timerId); document.getElementById("timer").textContent="25:00"; }
+
+// Keyboard shortcuts
+document.addEventListener("keydown", e=>{
+  if (e.target.matches("input,textarea")) return;
+  if (["1","2","3","4"].includes(e.key)) focusZone(parseInt(e.key));
+  else if (e.key==="d") toggleTheme();
+  else if (e.key==="?") alert("1-4: focus zone · d: theme · Enter in input: add task · click card: done · right-click: delete");
+});
+document.querySelectorAll(".add-input").forEach(inp=>{
+  inp.addEventListener("keydown", e=>{
+    if (e.key==="Enter"){ addTask(parseInt(inp.dataset.zone), inp.value); inp.value=""; }
+  });
+});
+
+// Settings
+function openSettings(){
+  const rows = document.getElementById("settings-rows");
+  rows.innerHTML = state.zones.map((z,i)=>`
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;color:var(--dim);text-transform:uppercase">Zone ${i+1} name</label>
+      <input data-k="name" data-i="${i}" value="${escapeHtml(z.name)}" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--fg);padding:6px 9px;border-radius:5px;font:inherit;margin-bottom:4px">
+      <label style="font-size:11px;color:var(--dim);text-transform:uppercase">Quick links (pipe+comma: Gmail|https://gmail.com, Drive|https://drive.google.com)</label>
+      <input data-k="links" data-i="${i}" value="${escapeHtml((z.links||[]).map(l=>l.t+'|'+l.u).join(', '))}" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--fg);padding:6px 9px;border-radius:5px;font:inherit">
+    </div>`).join("");
+}
+function saveSettings(){
+  document.querySelectorAll("#settings-rows input").forEach(inp=>{
+    const i = parseInt(inp.dataset.i), k = inp.dataset.k;
+    if (k==="name") state.zones[i].name = inp.value || `Zone ${i+1}`;
+    else if (k==="links") {
+      state.zones[i].links = inp.value.split(",").map(s=>s.trim()).filter(Boolean).map(s=>{
+        const [t,u] = s.split("|").map(x=>x.trim()); return {t, u: u||"#"};
+      });
+    }
+  });
+  save(); render(); document.getElementById("settings").close();
+}
+document.getElementById("settings").addEventListener("click", e=>{ if (e.target.id==="settings") document.getElementById("settings").close(); });
+document.getElementById("settings").addEventListener("close", ()=>{});
+const origShow = document.getElementById("settings").showModal.bind(document.getElementById("settings"));
+document.getElementById("settings").showModal = ()=>{ openSettings(); origShow(); };
+
+updateHeader(); setInterval(updateHeader, 15000);
+render();
+</script>
+</body>
+</html>
